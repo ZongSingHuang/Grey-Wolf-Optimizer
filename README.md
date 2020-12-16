@@ -9,3 +9,4 @@ https://github.com/7ossam81/EvoloPy/blob/master/optimizers/GWO.py
 
 1. Compared with WOA, GWO does not have any hyperparameters, but I think WOA performs better than GWO.
 2. EvoloPy Ver'GWO is better than orignal GWO
+3. WOA >>> EvoloPy GWO > GWO
