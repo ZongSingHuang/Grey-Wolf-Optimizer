@@ -15,94 +15,90 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 
 class GWO():
-    def __init__(self, fit_func, num_dim=30, num_particle=20, max_iter=500, 
-                 x_max=1, x_min=0, a_max=2, a_min=0):
-        self.fit_func = fit_func
-        self.num_dim = num_dim
-        self.num_particle = num_particle
-        self.max_iter = max_iter
-        self.x_max = x_max
-        self.x_min = x_min
+    def __init__(self, fitness, D=30, P=20, G=500, 
+                 ub=1, lb=0, a_max=2, a_min=0):
+        self.fitness = fitness
+        self.D = D
+        self.P = P
+        self.G = G
+        self.ub = ub
+        self.lb = lb
         self.a_max = a_max
         self.a_min = a_min
         
-        self._iter = 0
-        self.gBest_X = None
-        self.gBest_score = np.inf
-        self.gBest_curve = np.zeros(self.max_iter)
-        self.score_alpha = np.inf
-        self.score_beta = np.inf
-        self.score_delta = np.inf
-        self.X_alpha = None
-        self.X_beta = None
-        self.X_delta = None
-
-        self.X = np.random.uniform(low=self.x_min, high=self.x_max, size=[self.num_particle, self.num_dim])
-        
-        self.update_score()
-        
-        self._itter = self._iter + 1
+        self.gbest_X = np.zeros([self.D])
+        self.gbest_F = np.inf
+        self.loss_curve = np.zeros(self.G)
+        self.F_alpha = np.inf
+        self.F_beta = np.inf
+        self.F_delta = np.inf
+        self.X_alpha = np.zeros([self.D])
+        self.X_beta = np.zeros([self.D])
+        self.X_delta = np.zeros([self.D])
 
         
     def opt(self):
-        while(self._iter<self.max_iter):
-            a = self.a_max - (self.a_max-self.a_min)*(self._iter/self.max_iter)
+        # 初始化
+        self.X = np.random.uniform(low=self.lb, high=self.ub, size=[self.P, self.D])
+        
+        # 迭代
+        for g in range(self.G):
+            # 適應值計算
+            F = self.fitness(self.X)
             
-            for i in range(self.num_particle):
-                r1 = np.random.uniform(size=self.num_dim)
-                r2 = np.random.uniform(size=self.num_dim)
-                A = 2*a*r1 - a
-                C = 2*r2
-                D = np.abs(C*self.X_alpha - self.X[i, :])
-                X1 = self.X_alpha - A*D
-                
-                r1 = np.random.uniform(size=self.num_dim)
-                r2 = np.random.uniform(size=self.num_dim)
-                A = 2*a*r1 - a
-                C = 2*r2
-                D = np.abs(C*self.X_beta - self.X[i, :])
-                X2 = self.X_beta - A*D
-                
-                r1 = np.random.uniform(size=self.num_dim)
-                r2 = np.random.uniform(size=self.num_dim)
-                A = 2*a*r1 - a
-                C = 2*r2
-                D = np.abs(C*self.X_delta - self.X[i, :])
-                X3 = self.X_delta - A*D
-                
-                self.X[i, :] = np.mean([X1, X2, X3])
-                
+            # 更新最佳解
+            if np.min(F) < self.gbest_F:
+                idx = F.argmin()
+                self.gbest_X = self.X[idx].copy()
+                self.gbest_F = F.min()
             
-            self.X = np.clip(self.X, self.x_min, self.x_max)
+            # 收斂曲線
+            self.loss_curve[g] = self.gbest_F
             
-            self.update_score()
+            # 更新
+            for i in range(self.P):
+                if F[i]<self.F_alpha:
+                    self.F_alpha = F[i].copy()
+                    self.X_alpha = self.X[i].copy()
+                elif F[i]<self.F_beta:
+                    self.F_beta = F[i].copy()
+                    self.X_beta = self.X[i].copy()
+                elif F[i]<self.F_delta:
+                    self.F_delta = F[i].copy()
+                    self.X_delta = self.X[i].copy()
+                    
+            a = self.a_max - (self.a_max-self.a_min)*(g/self.G)
             
-            self._iter = self._iter + 1
+            r1 = np.random.uniform(size=[self.P, self.D])
+            r2 = np.random.uniform(size=[self.P, self.D])
+            A = 2*a*r1 - a
+            C = 2*r2
+            D = np.abs(C*self.X_alpha - self.X)
+            X1 = self.X_alpha - A*D
+            
+            r1 = np.random.uniform(size=[self.P, self.D])
+            r2 = np.random.uniform(size=[self.P, self.D])
+            A = 2*a*r1 - a
+            C = 2*r2
+            D = np.abs(C*self.X_beta - self.X)
+            X2 = self.X_beta - A*D
+            
+            r1 = np.random.uniform(size=[self.P, self.D])
+            r2 = np.random.uniform(size=[self.P, self.D])
+            A = 2*a*r1 - a
+            C = 2*r2
+            D = np.abs(C*self.X_delta - self.X)
+            X3 = self.X_delta - A*D
+                
+            self.X = (X1+X2+X3)/3
+                
+            # 邊界處理
+            self.X = np.clip(self.X, self.lb, self.ub)
         
     def plot_curve(self):
         plt.figure()
-        plt.title('loss curve ['+str(round(self.gBest_curve[-1], 3))+']')
-        plt.plot(self.gBest_curve, label='loss')
+        plt.title('loss curve ['+str(round(self.loss_curve[-1], 3))+']')
+        plt.plot(self.loss_curve, label='loss')
         plt.grid()
         plt.legend()
-        plt.show()
-    
-    def update_score(self):
-        score_all = self.fit_func(self.X)
-        for idx, score in  enumerate(score_all):
-            if score<self.score_alpha:
-                self.score_alpha = score.copy()
-                self.X_alpha = self.X[idx, :].copy()
-                
-            if score>self.score_alpha and score<self.score_beta:
-                self.score_beta = score.copy()
-                self.X_beta = self.X[idx, :].copy()
-            
-            if score>self.score_alpha and score>self.score_beta and score<self.score_delta:
-                self.score_delta = score.copy()
-                self.X_delta = self.X[idx, :].copy()
-        
-        self.gBest_X = self.X_alpha.copy()
-        self.gBest_score = self.score_alpha.copy()
-        self.gBest_curve[self._iter] = self.score_alpha.copy()
-            
+        plt.show()          
