@@ -1,7 +1,9 @@
 # Grey-Wolf-Optimizer
-Mirjalili, S., Mirjalili, S. M., &amp; Lewis, A. (2014). Grey Wolf Optimizer. Advances in Engineering Software, 69, 46–61. doi:10.1016/j.advengsoft.2013.12.007 
+S. Mirjalili, S. Mirjalili and A. Lewis, "Grey Wolf Optimizer", Advances in Engineering Software, vol. 69, pp. 46-61, 2014.
 
-https://seyedalimirjalili.com/gwo
+https://doi.org/10.1016/j.advengsoft.2013.12.007
+
+https://www.mathworks.com/matlabcentral/fileexchange/44974-grey-wolf-optimizer-gwo
 
 1. 重新優化了測試腳本
 
